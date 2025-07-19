@@ -68,5 +68,19 @@ export const theme = createTheme({
         },
       },
     },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.3s ease',
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          transition: 'all 0.3s ease',
+        },
+      },
+    },
   },
 });
