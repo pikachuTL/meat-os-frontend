@@ -50,16 +50,16 @@ const CategoryPage = ({ showNotification }) => {
     setSubmitting(true);
     
     try {
-      const form = new FormData();
-      form.append('name', name);
-      if (image) form.append('image', image);
+    const form = new FormData();
+    form.append('name', name);
+    if (image) form.append('image', image);
 
-      await axios.post(API, form, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+    await axios.post(API, form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
       
-      setName('');
-      setImage(null);
+    setName('');
+    setImage(null);
       const res = await axios.get(API);
       setCategories(res.data);
       showNotification('Category added successfully!', 'success');
@@ -73,7 +73,7 @@ const CategoryPage = ({ showNotification }) => {
   // Delete category
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API}/${id}`);
+    await axios.delete(`${API}/${id}`);
       setCategories(categories.filter(cat => cat._id !== id));
       showNotification('Category deleted successfully!', 'success');
     } catch (error) {
@@ -99,16 +99,16 @@ const CategoryPage = ({ showNotification }) => {
                 <TextField
                   fullWidth
                   label="Category Name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  required
+          value={name}
+          onChange={e => setName(e.target.value)}
+          required
                   disabled={submitting}
-                />
+        />
               </Grid>
               <Grid item xs={12} sm={4}>
-                <input
-                  type="file"
-                  onChange={e => setImage(e.target.files[0])}
+        <input
+          type="file"
+          onChange={e => setImage(e.target.files[0])}
                   style={{ display: 'none' }}
                   id="image-upload"
                   accept="image/*"
@@ -141,7 +141,7 @@ const CategoryPage = ({ showNotification }) => {
                 </Button>
               </Grid>
             </Grid>
-          </form>
+      </form>
         </CardContent>
       </Card>
 
@@ -151,13 +151,13 @@ const CategoryPage = ({ showNotification }) => {
             Categories ({categories.length})
           </Typography>
           <List>
-            {categories.map(cat => (
+        {categories.map(cat => (
               <ListItem key={cat._id} divider>
                 <ListItemAvatar>
                   {cat.image ? (
                     <Avatar
                       src={`https://meat-os-backend-production.up.railway.app/${cat.image.replace(/\\/g, "/")}`}
-                      alt={cat.name}
+                alt={cat.name}
                       sx={{ width: 56, height: 56 }}
                     />
                   ) : (
@@ -169,7 +169,7 @@ const CategoryPage = ({ showNotification }) => {
                 <ListItemText
                   primary={cat.name}
                   secondary={`ID: ${cat._id}`}
-                />
+              />
                 <ListItemSecondaryAction>
                   <IconButton
                     edge="end"

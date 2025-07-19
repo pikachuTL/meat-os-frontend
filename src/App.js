@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Box, Button, Typography, Snackbar, Alert } from '@mui/material';
-import { theme } from './theme';
+import { lightTheme, darkTheme } from './theme';
+import ThemeToggle from './components/ThemeToggle';
 import AdminLogin from './pages/AdminLogin';
 import CategoryPage from './pages/CategoryPage';
 import ProductPage from './pages/ProductPage';
@@ -14,6 +15,19 @@ function App() {
   const [view, setView] = useState('customer');
   const [adminTab, setAdminTab] = useState('category');
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Save dark mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
 
   const showNotification = (message, severity = 'success') => {
     setNotification({ open: true, message, severity });
@@ -36,10 +50,13 @@ function App() {
     showNotification('Successfully logged out!', 'info');
   };
 
+  const currentTheme = isDarkMode ? darkTheme : lightTheme;
+
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={currentTheme}>
       <CssBaseline />
       <div>
+        <ThemeToggle isDarkMode={isDarkMode} onToggle={toggleTheme} />
         <Header 
           view={view} 
           setView={setView} 
@@ -77,8 +94,8 @@ function App() {
               {adminTab === 'product' && <ProductPage showNotification={showNotification} />}
               {adminTab === 'order' && <OrderPage showNotification={showNotification} />}
             </Box>
-          ) : (
-            <AdminLogin onLogin={handleLogin} />
+      ) : (
+        <AdminLogin onLogin={handleLogin} />
           )
         ) : (
           <CustomerPage showNotification={showNotification} />
@@ -94,7 +111,7 @@ function App() {
             {notification.message}
           </Alert>
         </Snackbar>
-      </div>
+    </div>
     </ThemeProvider>
   );
 }

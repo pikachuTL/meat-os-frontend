@@ -1,60 +1,191 @@
-import React from 'react';
-import { Card, CardContent, CardMedia, Typography, Button, Box, Chip } from '@mui/material';
+import React, { useState } from 'react';
+import { 
+  Card, 
+  CardContent, 
+  CardMedia, 
+  Typography, 
+  Button, 
+  Box, 
+  Chip,
+  Fade,
+  Grow,
+  IconButton,
+  Tooltip
+} from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 
-const ProductCard = ({ product, onAddToCart }) => {
+const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const handleAddToCart = () => {
+    onAddToCart(product);
+    // Add a small animation effect
+    const button = document.activeElement;
+    if (button) {
+      button.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        button.style.transform = 'scale(1)';
+      }, 150);
+    }
+  };
+
   return (
-    <Card 
-      sx={{ 
-        height: '100%', 
-        display: 'flex', 
-        flexDirection: 'column',
-        transition: 'transform 0.2s ease-in-out',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-        }
-      }}
-    >
-      {product.image && (
-        <CardMedia
-          component="img"
-          height="200"
-          image={`https://meat-os-backend-production.up.railway.app/${product.image.replace(/\\/g, "/")}`}
-          alt={product.name}
-          sx={{ objectFit: 'cover' }}
-        />
-      )}
-      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h6" component="h3" gutterBottom>
-          {product.name}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          {product.description}
-        </Typography>
-        <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h6" color="primary" fontWeight="bold">
-              ₹{product.price}
-            </Typography>
-            <Chip 
-              label={product.unit} 
-              size="small" 
-              color="secondary" 
-              variant="outlined"
-            />
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddShoppingCartIcon />}
-            onClick={() => onAddToCart(product)}
-            sx={{ minWidth: 'auto' }}
-          >
-            Add
-          </Button>
+    <Grow in={true} timeout={800}>
+      <Card 
+        sx={{ 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column',
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: 3,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+          '&:hover': {
+            transform: 'translateY(-8px) scale(1.02)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+            '& .product-image': {
+              transform: 'scale(1.1)',
+            }
+          }
+        }}
+      >
+        {/* Favorite Button */}
+        <Box sx={{ position: 'absolute', top: 10, right: 10, zIndex: 1 }}>
+          <Tooltip title={isInWishlist ? "Remove from wishlist" : "Add to wishlist"}>
+            <IconButton
+              onClick={() => onToggleWishlist(product)}
+              sx={{
+                backgroundColor: 'rgba(255,255,255,0.9)',
+                backdropFilter: 'blur(10px)',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,1)',
+                  transform: 'scale(1.1)'
+                }
+              }}
+            >
+              {isInWishlist ? (
+                <FavoriteIcon sx={{ color: '#e91e63' }} />
+              ) : (
+                <FavoriteBorderIcon />
+              )}
+            </IconButton>
+          </Tooltip>
         </Box>
-      </CardContent>
-    </Card>
+
+        {/* Product Image */}
+        {product.image && (
+          <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+            <Fade in={imageLoaded} timeout={500}>
+              <CardMedia
+                component="img"
+                height="220"
+                image={`https://meat-os-backend-production.up.railway.app/${product.image.replace(/\\/g, "/")}`}
+                alt={product.name}
+                className="product-image"
+                onLoad={() => setImageLoaded(true)}
+                sx={{ 
+                  objectFit: 'cover',
+                  transition: 'transform 0.3s ease',
+                  filter: imageLoaded ? 'none' : 'blur(10px)'
+                }}
+              />
+            </Fade>
+            {!imageLoaded && (
+              <Box 
+                sx={{ 
+                  height: 220, 
+                  backgroundColor: 'grey.200',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Loading...
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+
+        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <LocalOfferIcon sx={{ mr: 1, color: 'primary.main', fontSize: 20 }} />
+            <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold' }}>
+              {product.name}
+            </Typography>
+          </Box>
+          
+          <Typography 
+            variant="body2" 
+            color="text.secondary" 
+            sx={{ 
+              mb: 2,
+              lineHeight: 1.6,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden'
+            }}
+          >
+            {product.description}
+          </Typography>
+
+          <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography 
+                variant="h5" 
+                color="primary" 
+                sx={{ 
+                  fontWeight: 'bold',
+                  background: 'linear-gradient(45deg, #FE6B8B, #FF8E53)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent'
+                }}
+              >
+                ₹{product.price}
+              </Typography>
+              <Chip 
+                label={product.unit} 
+                size="small" 
+                sx={{ 
+                  backgroundColor: 'primary.light',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  mt: 0.5
+                }}
+              />
+            </Box>
+            
+            <Button
+              variant="contained"
+              startIcon={<AddShoppingCartIcon />}
+              onClick={handleAddToCart}
+              sx={{ 
+                minWidth: 'auto',
+                px: 3,
+                py: 1,
+                borderRadius: 2,
+                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #FE6B8B 60%, #FF8E53 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 8px 20px rgba(254, 107, 139, 0.4)'
+                }
+              }}
+            >
+              Add
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    </Grow>
   );
 };
 
