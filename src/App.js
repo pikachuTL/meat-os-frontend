@@ -7,22 +7,34 @@ import CategoryPage from './pages/CategoryPage';
 import ProductPage from './pages/ProductPage';
 import OrderPage from './pages/OrderPage';
 import CustomerPage from './pages/CustomerPage';
-import Header from './components/Header'; // Add this line
+import Header from './components/Header';
+import Notification from './components/Notification';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('adminToken'));
   const [view, setView] = useState('customer');
   const [adminTab, setAdminTab] = useState('category');
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+
+  const showNotification = (message, severity = 'success') => {
+    setNotification({ open: true, message, severity });
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
+  };
 
   const handleLogin = () => {
     setIsLoggedIn(true);
     setView('admin');
+    showNotification('Successfully logged in!', 'success');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
     setIsLoggedIn(false);
     setView('customer');
+    showNotification('Successfully logged out!', 'info');
   };
 
   return (
@@ -62,16 +74,23 @@ function App() {
                   Orders
                 </Button>
               </Box>
-              {adminTab === 'category' && <CategoryPage />}
-              {adminTab === 'product' && <ProductPage />}
-              {adminTab === 'order' && <OrderPage />}
+              {adminTab === 'category' && <CategoryPage showNotification={showNotification} />}
+              {adminTab === 'product' && <ProductPage showNotification={showNotification} />}
+              {adminTab === 'order' && <OrderPage showNotification={showNotification} />}
             </Box>
           ) : (
             <AdminLogin onLogin={handleLogin} />
           )
         ) : (
-          <CustomerPage />
+          <CustomerPage showNotification={showNotification} />
         )}
+
+        <Notification
+          open={notification.open}
+          message={notification.message}
+          severity={notification.severity}
+          onClose={handleCloseNotification}
+        />
       </div>
     </ThemeProvider>
   );
