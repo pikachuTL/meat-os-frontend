@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline, Box, Button, Typography } from '@mui/material';
+import { CssBaseline, Box, Button, Typography, Snackbar, Alert } from '@mui/material';
 import { theme } from './theme';
 import AdminLogin from './pages/AdminLogin';
 import CategoryPage from './pages/CategoryPage';
@@ -8,7 +8,6 @@ import ProductPage from './pages/ProductPage';
 import OrderPage from './pages/OrderPage';
 import CustomerPage from './pages/CustomerPage';
 import Header from './components/Header';
-import Notification from './components/Notification';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('adminToken'));
@@ -85,12 +84,16 @@ function App() {
           <CustomerPage showNotification={showNotification} />
         )}
 
-        <Notification
+        <Snackbar
           open={notification.open}
-          message={notification.message}
-          severity={notification.severity}
+          autoHideDuration={6000}
           onClose={handleCloseNotification}
-        />
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>
+            {notification.message}
+          </Alert>
+        </Snackbar>
       </div>
     </ThemeProvider>
   );
