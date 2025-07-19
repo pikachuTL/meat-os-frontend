@@ -7,7 +7,7 @@ import CategoryPage from './pages/CategoryPage';
 import ProductPage from './pages/ProductPage';
 import OrderPage from './pages/OrderPage';
 import CustomerPage from './pages/CustomerPage';
-import Logo from './components/Logo';
+import Header from './components/Header'; // Add this line
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('adminToken'));
@@ -29,35 +29,12 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <div>
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          p: 2, 
-          bgcolor: 'background.paper',
-          boxShadow: 1
-        }}>
-          <Logo variant="h5" />
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button 
-              variant={view === 'customer' ? 'contained' : 'outlined'}
-              onClick={() => setView('customer')}
-            >
-              Customer Panel
-            </Button>
-            <Button 
-              variant={view === 'admin' ? 'contained' : 'outlined'}
-              onClick={() => setView('admin')}
-            >
-              Admin Panel
-            </Button>
-            {isLoggedIn && view === 'admin' && (
-              <Button variant="outlined" color="error" onClick={handleLogout}>
-                Logout
-              </Button>
-            )}
-          </Box>
-        </Box>
+        <Header 
+          view={view} 
+          setView={setView} 
+          isLoggedIn={isLoggedIn} 
+          handleLogout={handleLogout} 
+        />
         
         {view === 'admin' ? (
           isLoggedIn ? (
