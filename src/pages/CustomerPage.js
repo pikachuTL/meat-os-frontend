@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, TextField, Card, CardContent, Typography, Box, Grid, Radio, RadioGroup, FormControlLabel, FormLabel } from '@mui/material';
 
-const API = 'http://localhost:5000/api/product';
-const CATEGORY_API = 'http://localhost:5000/api/category';
+const API = 'https://meat-os-backend-production.up.railway.app/api/product';
+const CATEGORY_API = 'https://meat-os-backend-production.up.railway.app/api/category';
 
 const CustomerPage = () => {
   const [products, setProducts] = useState([]);

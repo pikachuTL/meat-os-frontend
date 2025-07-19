@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api/order';
+const API = 'https://meat-os-backend-production.up.railway.app/api/order';
 
 const OrderPage = () => {
   const [orders, setOrders] = useState([]);

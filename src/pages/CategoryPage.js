@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api/category';
+const API = 'https://meat-os-backend-production.up.railway.app/api/category';
 
 const CategoryPage = () => {
   const [categories, setCategories] = useState([]);
