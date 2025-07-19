@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, TextField, Card, CardContent, Typography, Box, Grid, Radio, RadioGroup, FormControlLabel, FormLabel } from '@mui/material';
+import ProductCard from '../components/ProductCard';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const API = 'https://meat-os-backend-production.up.railway.app/api/product';
 const CATEGORY_API = 'https://meat-os-backend-production.up.railway.app/api/category';
@@ -10,11 +12,25 @@ const CustomerPage = () => {
   const [categories, setCategories] = useState([]);
   const [cart, setCart] = useState([]);
   const [customer, setCustomer] = useState({ name: '', phone: '', address: '' });
-  const [paymentMethod, setPaymentMethod] = useState('COD'); // default COD
+  const [paymentMethod, setPaymentMethod] = useState('COD');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(API).then(res => setProducts(res.data));
-    axios.get(CATEGORY_API).then(res => setCategories(res.data));
+    const fetchData = async () => {
+      try {
+        const [productsRes, categoriesRes] = await Promise.all([
+          axios.get(API),
+          axios.get(CATEGORY_API)
+        ]);
+        setProducts(productsRes.data);
+        setCategories(categoriesRes.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
   const addToCart = (product) => {
@@ -79,6 +95,10 @@ const CustomerPage = () => {
     }
   };
 
+  if (loading) {
+    return <LoadingSpinner message="Loading products..." />;
+  }
+
   return (
     <Box sx={{ maxWidth: 1100, margin: '40px auto' }}>
       <Typography variant="h4" align="center" gutterBottom>Meat-OS Customer Panel</Typography>
@@ -92,27 +112,7 @@ const CustomerPage = () => {
                   .filter(p => p.category?._id === cat._id)
                   .map(prod => (
                     <Grid item xs={12} sm={6} md={4} key={prod._id}>
-                      <Card>
-                        <CardContent>
-                          <Typography variant="subtitle1"><b>{prod.name}</b></Typography>
-                          <Typography>₹{prod.price} / {prod.unit}</Typography>
-                          {prod.image && (
-                            <img
-                              src={`http://localhost:5000/${prod.image.replace(/\\/g, "/")}`}
-                              alt={prod.name}
-                              style={{ width: '100%', height: 100, objectFit: 'cover', margin: '8px 0' }}
-                            />
-                          )}
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            fullWidth
-                            onClick={() => addToCart(prod)}
-                          >
-                            Add to Cart
-                          </Button>
-                        </CardContent>
-                      </Card>
+                      <ProductCard product={prod} onAddToCart={addToCart} />
                     </Grid>
                   ))}
               </Grid>
