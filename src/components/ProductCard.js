@@ -16,6 +16,7 @@ import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import BlockIcon from '@mui/icons-material/Block';
 
 const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -36,7 +37,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
     <Grow in={true} timeout={800}>
       <Card 
         sx={{ 
-          height: '100%', 
+          height: 340, // reduced card height
           display: 'flex', 
           flexDirection: 'column',
           position: 'relative',
@@ -82,13 +83,17 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
             <Fade in={imageLoaded} timeout={500}>
               <CardMedia
                 component="img"
-                height="220"
-                image={`https://meat-os-backend-production.up.railway.app/${product.image.replace(/\\/g, "/")}`}
+                height="210"
+                width="220"
+                image={`https://meat-os-backend-production.up.railway.app/uploads/${product.image}`}
                 alt={product.name}
                 className="product-image"
                 onLoad={() => setImageLoaded(true)}
+                onError={(e) => setImageLoaded(true)}
                 sx={{ 
                   objectFit: 'cover',
+                  width: '100%',
+                  height: 210,
                   transition: 'transform 0.3s ease',
                   filter: imageLoaded ? 'none' : 'blur(10px)'
                 }}
@@ -97,15 +102,19 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
             {!imageLoaded && (
               <Box 
                 sx={{ 
-                  height: 220, 
+                  height: 210, 
                   backgroundColor: 'grey.200',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  flexDirection: 'column'
                 }}
               >
                 <Typography variant="body2" color="text.secondary">
                   Loading...
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                  {product.image}
                 </Typography>
               </Box>
             )}
@@ -135,6 +144,17 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
             {product.description}
           </Typography>
 
+          {/* In ProductCard, show available/not available chip (read-only) */}
+          <Box sx={{ mt: 1, mb: 1 }}>
+            <Chip 
+              label={product.available ? 'Available' : 'Not Available'} 
+              size="small" 
+              color={product.available ? 'success' : 'error'}
+              variant="filled"
+              sx={{ fontWeight: 'bold' }}
+            />
+          </Box>
+
           <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
               <Typography 
@@ -162,9 +182,11 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
               />
             </Box>
             
+            <Tooltip title={product.available ? 'Add to cart' : 'This product is not available for order'}>
+              <span>
             <Button
               variant="contained"
-              startIcon={<AddShoppingCartIcon />}
+                  startIcon={product.available ? <AddShoppingCartIcon /> : <BlockIcon />}
               onClick={handleAddToCart}
               sx={{ 
                 minWidth: 'auto',
@@ -179,9 +201,12 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
                   boxShadow: '0 8px 20px rgba(254, 107, 139, 0.4)'
                 }
               }}
+                  disabled={!product.available}
             >
-              Add
+                  {product.available ? 'Add' : 'Unavailable'}
             </Button>
+              </span>
+            </Tooltip>
           </Box>
         </CardContent>
       </Card>

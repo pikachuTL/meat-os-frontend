@@ -21,8 +21,10 @@ import StorefrontIcon from '@mui/icons-material/Storefront';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import ThemeToggle from './ThemeToggle';
 
-const Header = ({ view, setView, isLoggedIn, handleLogout }) => {
+const Header = ({ view, setView, isLoggedIn, handleLogout, isDarkMode, onToggleTheme }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const theme = useTheme();
@@ -47,13 +49,15 @@ const Header = ({ view, setView, isLoggedIn, handleLogout }) => {
       text: 'Customer View', 
       value: 'customer', 
       icon: <PersonIcon />,
-      color: '#4CAF50'
+      color: '#4CAF50',
+      showAlways: true
     },
     { 
       text: 'Admin Panel', 
       value: 'admin', 
       icon: <AdminPanelSettingsIcon />,
-      color: '#FF9800'
+      color: '#FF9800',
+      showAlways: true
     }
   ];
 
@@ -70,10 +74,9 @@ const Header = ({ view, setView, isLoggedIn, handleLogout }) => {
       </Box>
       <List>
         {menuItems.map((item, index) => (
-          <Slide direction="left" in={true} timeout={300 + index * 100}>
+          <Slide direction="left" in={true} timeout={300 + index * 100} key={item.value}>
             <ListItem 
               button 
-              key={item.value}
               onClick={() => handleViewChange(item.value)}
               sx={{
                 mx: 2,
@@ -137,6 +140,9 @@ const Header = ({ view, setView, isLoggedIn, handleLogout }) => {
           </Slide>
         )}
       </List>
+      <Box sx={{ textAlign: 'center', mt: 2 }}>
+        <ThemeToggle isDarkMode={isDarkMode} onToggle={onToggleTheme} />
+      </Box>
     </Box>
   );
 
@@ -206,11 +212,10 @@ const Header = ({ view, setView, isLoggedIn, handleLogout }) => {
             </Fade>
           ) : (
             <Fade in={true} timeout={1500}>
-              <Box sx={{ display: 'flex', gap: 2, ml: 'auto' }}>
+              <Box sx={{ display: 'flex', gap: 2, ml: 'auto', alignItems: 'center' }}>
                 {menuItems.map((item, index) => (
-                  <Slide direction="down" in={true} timeout={800 + index * 200}>
+                  <Slide direction="down" in={true} timeout={800 + index * 200} key={item.value}>
                     <Button
-                      key={item.value}
                       color="inherit"
                       onClick={() => setView(item.value)}
                       sx={{
@@ -254,6 +259,7 @@ const Header = ({ view, setView, isLoggedIn, handleLogout }) => {
                     </Button>
                   </Slide>
                 )}
+                <ThemeToggle isDarkMode={isDarkMode} onToggle={onToggleTheme} />
               </Box>
             </Fade>
           )}

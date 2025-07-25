@@ -26,6 +26,15 @@ const PaymentModal = ({ open, onClose, orderData, onPaymentSuccess, onPaymentFai
     setError('');
 
     try {
+      // Validate order data
+      if (!orderData.customerName || !orderData.customerPhone || !orderData.customerAddress) {
+        throw new Error('Please complete your profile and add delivery address');
+      }
+
+      if (!orderData.items || orderData.items.length === 0) {
+        throw new Error('Cart is empty');
+      }
+
       const response = await axios.post(
         'https://meat-os-backend-production.up.railway.app/api/order',
         {
@@ -38,7 +47,8 @@ const PaymentModal = ({ open, onClose, orderData, onPaymentSuccess, onPaymentFai
       onClose();
     } catch (error) {
       console.error('COD order error:', error);
-      setError('Failed to place order. Please try again.');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to place order. Please try again.';
+      setError(errorMessage);
       onPaymentFailure();
     } finally {
       setLoading(false);

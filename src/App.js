@@ -9,6 +9,7 @@ import ProductPage from './pages/ProductPage';
 import OrderPage from './pages/OrderPage';
 import CustomerPage from './pages/CustomerPage';
 import Header from './components/Header';
+import Footer from './components/Footer';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('adminToken'));
@@ -55,13 +56,14 @@ function App() {
   return (
     <ThemeProvider theme={currentTheme}>
       <CssBaseline />
-      <div>
-        <ThemeToggle isDarkMode={isDarkMode} onToggle={toggleTheme} />
+    <div>
         <Header 
           view={view} 
           setView={setView} 
           isLoggedIn={isLoggedIn} 
           handleLogout={handleLogout} 
+          isDarkMode={isDarkMode}
+          onToggleTheme={toggleTheme}
         />
         
         {view === 'admin' ? (
@@ -70,7 +72,7 @@ function App() {
               <Typography variant="h4" align="center" gutterBottom>
                 Admin Dashboard
               </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
                 <Button 
                   variant={adminTab === 'category' ? 'contained' : 'outlined'}
                   onClick={() => setAdminTab('category')}
@@ -89,16 +91,28 @@ function App() {
                 >
                   Orders
                 </Button>
+                <Button 
+                  variant={adminTab === 'customer-view' ? 'contained' : 'outlined'}
+                  onClick={() => setAdminTab('customer-view')}
+                  color="secondary"
+                >
+                  Customer View
+                </Button>
               </Box>
               {adminTab === 'category' && <CategoryPage showNotification={showNotification} />}
               {adminTab === 'product' && <ProductPage showNotification={showNotification} />}
               {adminTab === 'order' && <OrderPage showNotification={showNotification} />}
+              {adminTab === 'customer-view' && <CustomerPage showNotification={showNotification} isAdminView={true} />}
             </Box>
       ) : (
         <AdminLogin onLogin={handleLogin} />
           )
         ) : (
-          <CustomerPage showNotification={showNotification} />
+          view === 'delivery' ? (
+            <CustomerPage showNotification={showNotification} isAdminView={false} />
+          ) : (
+            <CustomerPage showNotification={showNotification} isAdminView={false} />
+          )
         )}
 
         <Snackbar
@@ -111,6 +125,7 @@ function App() {
             {notification.message}
           </Alert>
         </Snackbar>
+        <Footer />
     </div>
     </ThemeProvider>
   );

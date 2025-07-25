@@ -22,12 +22,23 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Chip,
-  Divider
+  Divider,
+  Paper,
+  Fade,
+  Slide,
+  Grow,
+  Container,
+  Alert,
+  InputAdornment
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import CancelIcon from '@mui/icons-material/Cancel';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import ImageIcon from '@mui/icons-material/Image';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import CategoryIcon from '@mui/icons-material/Category';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const API = 'https://meat-os-backend-production.up.railway.app/api/product';
@@ -38,6 +49,7 @@ const ProductPage = ({ showNotification }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
   const [form, setForm] = useState({
     name: '',
     category: '',
@@ -76,7 +88,15 @@ const ProductPage = ({ showNotification }) => {
   };
 
   const handleFile = e => {
-    setForm(f => ({ ...f, image: e.target.files[0] }));
+    console.log('handleFile called', e.target.files);
+    const file = e.target.files[0];
+    if (file) {
+      console.log('File selected:', file.name, file.type);
+      setForm(f => ({ ...f, image: file }));
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async e => {
@@ -114,6 +134,7 @@ const ProductPage = ({ showNotification }) => {
         available: true,
         image: null
       });
+      setImagePreview(null);
       
       // Refresh data
       const [productsRes, categoriesRes] = await Promise.all([
@@ -140,6 +161,7 @@ const ProductPage = ({ showNotification }) => {
       available: prod.available,
       image: null
     });
+    setImagePreview(null);
   };
 
   const handleDelete = async id => {
@@ -163,6 +185,18 @@ const ProductPage = ({ showNotification }) => {
       available: true,
       image: null
     });
+    setImagePreview(null);
+  };
+
+  const handleToggleAvailable = async (prod) => {
+    try {
+      await axios.put(`${API}/${prod._id}`, { ...prod, available: !prod.available });
+      const productsRes = await axios.get(API);
+      setProducts(productsRes.data);
+      showNotification('Product availability updated!', 'success');
+    } catch (error) {
+      showNotification('Failed to update availability', 'error');
+    }
   };
 
   if (loading) {
@@ -170,19 +204,39 @@ const ProductPage = ({ showNotification }) => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1000, margin: '0 auto', p: 3 }}>
-      <Typography variant="h4" gutterBottom align="center">
-        Product Management
-      </Typography>
-      
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Hero Section */}
+      <Fade in={true} timeout={1000}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Typography 
+            variant="h3" 
+            sx={{ 
+              fontWeight: 'bold',
+              background: 'linear-gradient(45deg, #FE6B8B, #FF8E53)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 2
+            }}
+          >
+            Product Management
+          </Typography>
+          <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
+            Add and manage your meat products with images and details
+          </Typography>
+        </Box>
+      </Fade>
+
+      {/* Add/Edit Product Form */}
+      <Slide direction="up" in={true} timeout={1200}>
+        <Paper sx={{ p: 4, mb: 4, borderRadius: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3, textAlign: 'center' }}>
             {editingProduct ? 'Edit Product' : 'Add New Product'}
           </Typography>
+          
           <form onSubmit={handleSubmit}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   name="name"
@@ -191,16 +245,45 @@ const ProductPage = ({ showNotification }) => {
                   onChange={handleChange}
                   required
                   disabled={submitting}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <InventoryIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: 'white',
+                      '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+                      '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+                      '&.Mui-focused fieldset': { borderColor: 'white' },
+                    },
+                    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.8)' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: 'white' }
+                  }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              
+              <Grid item xs={12} md={6}>
                 <FormControl fullWidth required>
-                  <InputLabel>Category</InputLabel>
+                  <InputLabel sx={{ color: 'rgba(255,255,255,0.8)' }}>Category</InputLabel>
                   <Select
                     name="category"
                     value={form.category}
                     onChange={handleChange}
                     disabled={submitting}
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <CategoryIcon sx={{ color: 'rgba(255,255,255,0.7)', mr: 1 }} />
+                      </InputAdornment>
+                    }
+                    sx={{
+                      color: 'white',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.5)' },
+                      '& .MuiSelect-icon': { color: 'white' }
+                    }}
                   >
                     {categories.map(cat => (
                       <MenuItem key={cat._id} value={cat._id}>{cat.name}</MenuItem>
@@ -208,7 +291,8 @@ const ProductPage = ({ showNotification }) => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              
+              <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
                   type="number"
@@ -218,16 +302,40 @@ const ProductPage = ({ showNotification }) => {
                   onChange={handleChange}
                   required
                   disabled={submitting}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AttachMoneyIcon sx={{ color: 'rgba(255,255,255,0.7)' }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: 'white',
+                      '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+                      '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+                      '&.Mui-focused fieldset': { borderColor: 'white' },
+                    },
+                    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.8)' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: 'white' }
+                  }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              
+              <Grid item xs={12} md={4}>
                 <FormControl fullWidth>
-                  <InputLabel>Unit</InputLabel>
+                  <InputLabel sx={{ color: 'rgba(255,255,255,0.8)' }}>Unit</InputLabel>
                   <Select
                     name="unit"
                     value={form.unit}
                     onChange={handleChange}
                     disabled={submitting}
+                    sx={{
+                      color: 'white',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.5)' },
+                      '& .MuiSelect-icon': { color: 'white' }
+                    }}
                   >
                     <MenuItem value="kg">kg</MenuItem>
                     <MenuItem value="gram">gram</MenuItem>
@@ -235,7 +343,8 @@ const ProductPage = ({ showNotification }) => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={4}>
+              
+              <Grid item xs={12} md={4}>
                 <FormControlLabel
                   control={
                     <Switch
@@ -243,11 +352,24 @@ const ProductPage = ({ showNotification }) => {
                       checked={form.available}
                       onChange={handleChange}
                       disabled={submitting}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255,255,255,0.1)'
+                          }
+                        },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: 'white'
+                        }
+                      }}
                     />
                   }
                   label="Available"
+                  sx={{ color: 'rgba(255,255,255,0.9)' }}
                 />
               </Grid>
+              
               <Grid item xs={12}>
                 <TextField
                   fullWidth
@@ -258,15 +380,26 @@ const ProductPage = ({ showNotification }) => {
                   value={form.description}
                   onChange={handleChange}
                   disabled={submitting}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      color: 'white',
+                      '& fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+                      '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+                      '&.Mui-focused fieldset': { borderColor: 'white' },
+                    },
+                    '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.8)' },
+                    '& .MuiInputLabel-root.Mui-focused': { color: 'white' }
+                  }}
                 />
               </Grid>
-              <Grid item xs={12} sm={8}>
+              
+              <Grid item xs={12} md={8}>
                 <input
                   type="file"
                   onChange={handleFile}
                   style={{ display: 'none' }}
                   id="product-image-upload"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/jpg,image/gif"
                 />
                 <label htmlFor="product-image-upload">
                   <Button
@@ -274,17 +407,28 @@ const ProductPage = ({ showNotification }) => {
                     component="span"
                     disabled={submitting}
                     fullWidth
+                    startIcon={<ImageIcon />}
+                    onClick={() => console.log('Button clicked')}
+                    sx={{
+                      color: 'white',
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      '&:hover': {
+                        borderColor: 'white',
+                        backgroundColor: 'rgba(255,255,255,0.1)'
+                      }
+                    }}
                   >
                     Choose Product Image
                   </Button>
                 </label>
                 {form.image && (
-                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                  <Typography variant="caption" display="block" sx={{ mt: 1, color: 'rgba(255,255,255,0.8)' }}>
                     Selected: {form.image.name}
                   </Typography>
                 )}
               </Grid>
-              <Grid item xs={12} sm={4}>
+              
+              <Grid item xs={12} md={4}>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Button
                     type="submit"
@@ -292,6 +436,14 @@ const ProductPage = ({ showNotification }) => {
                     startIcon={editingProduct ? <EditIcon /> : <AddIcon />}
                     disabled={submitting || !form.name || !form.category || !form.price}
                     fullWidth
+                    sx={{
+                      backgroundColor: 'rgba(255,255,255,0.9)',
+                      color: '#764ba2',
+                      fontWeight: 'bold',
+                      '&:hover': {
+                        backgroundColor: 'white'
+                      }
+                    }}
                   >
                     {submitting ? 'Saving...' : (editingProduct ? 'Update Product' : 'Add Product')}
                   </Button>
@@ -301,6 +453,14 @@ const ProductPage = ({ showNotification }) => {
                       startIcon={<CancelIcon />}
                       onClick={handleCancelEdit}
                       disabled={submitting}
+                      sx={{
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        '&:hover': {
+                          borderColor: 'white',
+                          backgroundColor: 'rgba(255,255,255,0.1)'
+                        }
+                      }}
                     >
                       Cancel
                     </Button>
@@ -309,93 +469,170 @@ const ProductPage = ({ showNotification }) => {
               </Grid>
             </Grid>
           </form>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Products ({products.length})
-          </Typography>
-          <List>
-            {products.map((prod, index) => (
-              <React.Fragment key={prod._id}>
-                <ListItem>
-                  <ListItemAvatar>
-                    {prod.image ? (
-                      <Avatar
-                        src={`https://meat-os-backend-production.up.railway.app/${prod.image.replace(/\\/g, "/")}`}
-                        alt={prod.name}
-                        sx={{ width: 56, height: 56 }}
-                      />
-                    ) : (
-                      <Avatar sx={{ width: 56, height: 56, bgcolor: 'secondary.main' }}>
-                        {prod.name.charAt(0).toUpperCase()}
-                      </Avatar>
-                    )}
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          {prod.name}
+          {/* Image Preview */}
+          {imagePreview && (
+            <Fade in={true} timeout={500}>
+              <Box sx={{ mt: 3, textAlign: 'center' }}>
+                <Typography variant="subtitle2" sx={{ mb: 2, color: 'rgba(255,255,255,0.9)' }}>
+                  Image Preview:
+                </Typography>
+                <Box
+                  component="img"
+                  src={imagePreview}
+                  alt="Preview"
+                  sx={{
+                    width: 200,
+                    height: 150,
+                    objectFit: 'cover',
+                    borderRadius: 2,
+                    border: '3px solid rgba(255,255,255,0.3)'
+                  }}
+                />
+              </Box>
+            </Fade>
+          )}
+        </Paper>
+      </Slide>
+
+      {/* Products List */}
+      <Slide direction="up" in={true} timeout={1500}>
+        <Paper sx={{ p: 4, borderRadius: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <InventoryIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+              Products ({products.length})
+            </Typography>
+          </Box>
+
+          {products.length === 0 ? (
+            <Alert severity="info" sx={{ textAlign: 'center', py: 4 }}>
+              No products found. Add your first product above to get started!
+            </Alert>
+          ) : (
+            <Grid container spacing={3}>
+              {products.map((prod, index) => (
+                <Grid item xs={12} sm={6} md={4} key={prod._id}>
+                  <Grow in={true} timeout={800 + index * 200}>
+                    <Card 
+                      sx={{ 
+                        height: '100%',
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
+                        }
+                      }}
+                    >
+                      <Box sx={{ position: 'relative' }}>
+                        {prod.image ? (
+                          <Box
+                            component="img"
+                            src={`https://meat-os-backend-production.up.railway.app/uploads/${prod.image}`}
+                            alt={prod.name}
+                            sx={{
+                              width: '100%',
+                              height: 200,
+                              objectFit: 'cover'
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: '100%',
+                              height: 200,
+                              backgroundColor: 'secondary.main',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            <InventoryIcon sx={{ fontSize: 60, color: 'white' }} />
+                          </Box>
+                        )}
+                        
+                        <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 1 }}>
+                          <IconButton
+                            sx={{
+                              backgroundColor: 'rgba(255,255,255,0.9)',
+                              '&:hover': {
+                                backgroundColor: 'white'
+                              }
+                            }}
+                            onClick={() => handleEdit(prod)}
+                          >
+                            <EditIcon color="primary" />
+                          </IconButton>
+                          <IconButton
+                            sx={{
+                              backgroundColor: 'rgba(255,255,255,0.9)',
+                              '&:hover': {
+                                backgroundColor: 'white'
+                              }
+                            }}
+                            onClick={() => handleDelete(prod._id)}
+                          >
+                            <DeleteIcon color="error" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                      
+                      <CardContent>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', flex: 1 }}>
+                            {prod.name}
+                          </Typography>
+                          <Chip 
+                            label={prod.unit} 
+                            size="small" 
+                            color="primary" 
+                            variant="outlined"
+                          />
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={prod.available}
+                                onChange={() => handleToggleAvailable(prod)}
+                                color="success"
+                              />
+                            }
+                            label={prod.available ? 'Available' : 'Not Available'}
+                            sx={{ ml: 2 }}
+                          />
+                        </Box>
+                        
+                        <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          ₹{prod.price}
                         </Typography>
-                        <Chip 
-                          label={prod.unit} 
-                          size="small" 
-                          color="primary" 
-                          variant="outlined"
-                        />
+                        
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          Category: {prod.category?.name}
+                        </Typography>
+                        
+                        {prod.description && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            {prod.description}
+                          </Typography>
+                        )}
+                        
                         <Chip 
                           label={prod.available ? 'Available' : 'Not Available'} 
                           size="small" 
                           color={prod.available ? 'success' : 'error'}
+                          variant="filled"
                         />
-                      </Box>
-                    }
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          ₹{prod.price} | {prod.category?.name}
-                        </Typography>
-                        {prod.description && (
-                          <Typography variant="body2" color="text.secondary">
-                            {prod.description}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                  />
-                  <ListItemSecondaryAction>
-                    <IconButton
-                      edge="end"
-                      color="primary"
-                      onClick={() => handleEdit(prod)}
-                      sx={{ mr: 1 }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      edge="end"
-                      color="error"
-                      onClick={() => handleDelete(prod._id)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </ListItemSecondaryAction>
-                </ListItem>
-                {index < products.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
-          {products.length === 0 && (
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
-              No products found. Add your first product above.
-            </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                </Grid>
+              ))}
+            </Grid>
           )}
-        </CardContent>
-      </Card>
-    </Box>
+        </Paper>
+      </Slide>
+    </Container>
   );
 };
 

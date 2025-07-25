@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 const LoadingSpinner = ({ message = 'Loading...' }) => {
   return (
@@ -13,14 +13,25 @@ const LoadingSpinner = ({ message = 'Loading...' }) => {
         gap: 2
       }}
     >
-      <CircularProgress 
-        size={60} 
-        thickness={4}
+      <Typography
+        variant="h2"
         sx={{
-          color: 'primary.main',
-          animation: 'pulse 2s ease-in-out infinite'
+          fontWeight: 'bold',
+          background: 'linear-gradient(45deg, #FE6B8B, #FF8E53)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          letterSpacing: 2,
+          mb: 1,
+          animation: 'pulse 2s ease-in-out infinite',
+          '@keyframes pulse': {
+            '0%, 100%': { opacity: 0.7, transform: 'scale(1)' },
+            '50%': { opacity: 1, transform: 'scale(1.08)' }
+          }
         }}
-      />
+      >
+        meat-OS
+      </Typography>
       <Typography 
         variant="body1" 
         color="text.secondary"
