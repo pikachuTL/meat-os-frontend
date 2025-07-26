@@ -80,7 +80,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://meat-os-backend-production.up.railway.app/api";
 const CATEGORY_API = 'https://meat-os-backend-production.up.railway.app/api/category';
 
 const CustomerPage = ({ showNotification, isAdminView = false }) => {
@@ -201,7 +201,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
   const fetchCustomerOrders = async () => {
     if (!customer.phone) return;
     try {
-      const res = await axios.get(`http://localhost:5000/api/order/customer/${customer.phone}`);
+      const res = await axios.get(`https://meat-os-backend-production.up.railway.app/api/order/customer/${customer.phone}`);
       setOrders(res.data);
     } catch (err) {
       showNotification('Failed to fetch order history', 'error');
@@ -215,23 +215,6 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
     }
     // eslint-disable-next-line
   }, [orderHistoryOpen, customer.phone]);
-
-  // Fetch wishlist from backend when customer signs in or phone changes
-  useEffect(() => {
-    const fetchWishlist = async () => {
-      if (customer && customer.phone) {
-        try {
-          const res = await axios.get(`${API_BASE}/auth/wishlist/${customer.phone}`);
-          setWishlist(res.data.wishlist || []);
-        } catch (err) {
-          setWishlist([]);
-        }
-      } else {
-        setWishlist([]);
-      }
-    };
-    fetchWishlist();
-  }, [customer.phone]);
 
   const addToCart = (product) => {
     setCart(prev => {
@@ -344,7 +327,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
   // handleTrackOrder: fetch latest order data from backend and show in modal
   const handleTrackOrder = async (order) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/order/${order._id}`);
+      const res = await axios.get(`https://meat-os-backend-production.up.railway.app/api/order/${order._id}`);
       setTrackingOrder(res.data);
     setTrackingOpen(true);
     } catch (err) {
@@ -352,27 +335,20 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
     }
   };
 
-  // Add/remove wishlist item and sync with backend
-  const toggleWishlist = async (product) => {
-    if (!customer.phone) {
-      showNotification('Please sign in to use wishlist', 'info');
-      setSignInOpen(true);
-      return;
-    }
-    const exists = wishlist.find(item => item._id === product._id);
-    try {
+  const toggleWishlist = (product) => {
+    setWishlist(prev => {
+      const exists = prev.find(item => item._id === product._id);
       if (exists) {
-        // Remove from wishlist
-        const res = await axios.post(`${API_BASE}/auth/wishlist/remove`, { phone: customer.phone, productId: product._id });
-        setWishlist(res.data.wishlist || []);
+        const updated = prev.filter(item => item._id !== product._id);
+        showNotification('Removed from wishlist!', 'info');
+        return updated;
       } else {
-        // Add to wishlist
-        const res = await axios.post(`${API_BASE}/auth/wishlist/add`, { phone: customer.phone, productId: product._id });
-        setWishlist(res.data.wishlist || []);
+        const updated = [...prev, product];
+        showNotification('Added to wishlist!', 'success');
+        return updated;
       }
-    } catch (err) {
-      showNotification('Failed to update wishlist', 'error');
-    }
+    });
+    setShowWishlist(true); // Open wishlist popover/modal immediately
   };
 
   const isInWishlist = (productId) => {
@@ -535,7 +511,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
       return;
     }
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/customer/update-profile', {
+      const res = await axios.post('https://meat-os-backend-production.up.railway.app/api/auth/customer/update-profile', {
         phone: customer.phone,
         name: customer.name,
         email: customer.email,
@@ -574,7 +550,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
     setSignInError('');
     
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/customer/login', {
+      const response = await axios.post('https://meat-os-backend-production.up.railway.app/api/auth/customer/login', {
         phone: signInPhone,
         email: signInEmail,
         name: signInName
@@ -1180,36 +1156,36 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
               </DialogActions>
             </Dialog>
           ) : (
-          <Slide direction="left" in={cartOpen} timeout={300}>
-            <Grid item xs={12} lg={4}>
+            <Slide direction="left" in={cartOpen} timeout={300}>
+              <Grid item xs={12} lg={4}>
                 <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, height: 'fit-content', position: 'sticky', top: 20, width: { xs: '100%', lg: 'auto' }, boxShadow: { xs: 2, md: 3 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                  <ShoppingCartIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                    Your Cart ({cart.length} items)
-                  </Typography>
-                </Box>
-                
-                {cart.length === 0 ? (
-                  <Fade in={true} timeout={500}>
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <ShoppingCartIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                      <Typography variant="h6" color="text.secondary">
-                        Your cart is empty
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Add some products to get started!
-                      </Typography>
-                    </Box>
-                  </Fade>
-                ) : (
-                  <Fade in={true} timeout={500}>
-                    <Box>
-                      {cart.map((item, index) => (
-                        <Slide direction="up" in={true} timeout={300 + index * 100} key={item._id}>
-                          <Card sx={{ mb: 2, borderRadius: 2 }}>
-                            <CardContent sx={{ p: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <ShoppingCartIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      Your Cart ({cart.length} items)
+                    </Typography>
+                  </Box>
+                  
+                  {cart.length === 0 ? (
+                    <Fade in={true} timeout={500}>
+                      <Box sx={{ textAlign: 'center', py: 4 }}>
+                        <ShoppingCartIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                        <Typography variant="h6" color="text.secondary">
+                          Your cart is empty
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Add some products to get started!
+                        </Typography>
+                      </Box>
+                    </Fade>
+                  ) : (
+                    <Fade in={true} timeout={500}>
+                      <Box>
+                        {cart.map((item, index) => (
+                          <Slide direction="up" in={true} timeout={300 + index * 100} key={item._id}>
+                            <Card sx={{ mb: 2, borderRadius: 2 }}>
+                              <CardContent sx={{ p: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                   {item.image && (
                                     <Box sx={{ mr: 2 }}>
                                       <img
@@ -1219,129 +1195,129 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
                                       />
                                     </Box>
                                   )}
-                                <Box sx={{ flex: 1 }}>
-                                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                    {item.name}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    ₹{item.price} per {item.unit}
-                                  </Typography>
+                                  <Box sx={{ flex: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                      {item.name}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      ₹{item.price} per {item.unit}
+                                    </Typography>
+                                  </Box>
+                                  
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => updateQuantity(item._id, Math.max(0, item.quantity - 1))}
+                                      sx={{ backgroundColor: 'grey.100' }}
+                                    >
+                                      <RemoveIcon fontSize="small" />
+                                    </IconButton>
+                                    
+                                    <Typography sx={{ minWidth: 30, textAlign: 'center' }}>
+                                      {item.quantity}
+                                    </Typography>
+                                    
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                                      sx={{ backgroundColor: 'primary.light', color: 'white' }}
+                                    >
+                                      <AddIcon fontSize="small" />
+                                    </IconButton>
+                                    
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => removeFromCart(item._id)}
+                                      sx={{ backgroundColor: 'error.light', color: 'white' }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
                                 </Box>
                                 
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => updateQuantity(item._id, Math.max(0, item.quantity - 1))}
-                                    sx={{ backgroundColor: 'grey.100' }}
-                                  >
-                                    <RemoveIcon fontSize="small" />
-                                  </IconButton>
-                                  
-                                  <Typography sx={{ minWidth: 30, textAlign: 'center' }}>
-                                    {item.quantity}
-                                  </Typography>
-                                  
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                                    sx={{ backgroundColor: 'primary.light', color: 'white' }}
-                                  >
-                                    <AddIcon fontSize="small" />
-                                  </IconButton>
-                                  
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => removeFromCart(item._id)}
-                                    sx={{ backgroundColor: 'error.light', color: 'white' }}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </Box>
-                              </Box>
-                              
-                              <Typography variant="h6" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>
-                                ₹{item.price * item.quantity}
-                              </Typography>
-                            </CardContent>
-                          </Card>
-                        </Slide>
-                      ))}
-                      
-                      <Divider sx={{ my: 2 }} />
-                      
-                      <Box sx={{ mb: 3 }}>
-                        <Typography variant="h5" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
-                          Total: ₹{total}
-                        </Typography>
-                      </Box>
-                      
-                      {/* Customer Profile Status */}
-                      <Box sx={{ mb: 3 }}>
-                        {!customer.name || !customer.phone ? (
-                          <Alert severity="warning" sx={{ mb: 2 }}>
-                            Please complete your profile to continue
-                          </Alert>
-                        ) : !customer.isVerified ? (
-                          <Alert severity="info" sx={{ mb: 2 }}>
-                            Please verify your phone number
-                          </Alert>
-                        ) : customer.addresses.length === 0 ? (
-                          <Alert severity="info" sx={{ mb: 2 }}>
-                            Please add a delivery address
-                          </Alert>
-                        ) : (
-                          <Alert severity="success" sx={{ mb: 2 }}>
-                            Ready to order!
-                          </Alert>
-                        )}
+                                <Typography variant="h6" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>
+                                  ₹{item.price * item.quantity}
+                                </Typography>
+                              </CardContent>
+                            </Card>
+                          </Slide>
+                        ))}
                         
-                        {/* Selected Address Display */}
-                        {customer.addresses.length > 0 && selectedAddress >= 0 && (
-                          <Box sx={{ mt: 2, p: 2, backgroundColor: '#f0f8ff', borderRadius: 2, border: '1px solid #2196F3' }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: '#2196F3' }}>
-                              📍 Delivery Address:
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              {customer.addresses[selectedAddress].type === 'home' ? <HomeIcon color="primary" /> : 
-                               customer.addresses[selectedAddress].type === 'work' ? <WorkIcon color="primary" /> : 
-                               <LocationOnIcon color="primary" />}
-                              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                {customer.addresses[selectedAddress].label}
+                        <Divider sx={{ my: 2 }} />
+                        
+                        <Box sx={{ mb: 3 }}>
+                          <Typography variant="h5" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                            Total: ₹{total}
+                          </Typography>
+                        </Box>
+                        
+                        {/* Customer Profile Status */}
+                        <Box sx={{ mb: 3 }}>
+                          {!customer.name || !customer.phone ? (
+                            <Alert severity="warning" sx={{ mb: 2 }}>
+                              Please complete your profile to continue
+                            </Alert>
+                          ) : !customer.isVerified ? (
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                              Please verify your phone number
+                            </Alert>
+                          ) : customer.addresses.length === 0 ? (
+                            <Alert severity="info" sx={{ mb: 2 }}>
+                              Please add a delivery address
+                            </Alert>
+                          ) : (
+                            <Alert severity="success" sx={{ mb: 2 }}>
+                              Ready to order!
+                            </Alert>
+                          )}
+                          
+                          {/* Selected Address Display */}
+                          {customer.addresses.length > 0 && selectedAddress >= 0 && (
+                            <Box sx={{ mt: 2, p: 2, backgroundColor: '#f0f8ff', borderRadius: 2, border: '1px solid #2196F3' }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, color: '#2196F3' }}>
+                                📍 Delivery Address:
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                {customer.addresses[selectedAddress].type === 'home' ? <HomeIcon color="primary" /> : 
+                                 customer.addresses[selectedAddress].type === 'work' ? <WorkIcon color="primary" /> : 
+                                 <LocationOnIcon color="primary" />}
+                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                  {customer.addresses[selectedAddress].label}
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" color="text.secondary">
+                                {customer.addresses[selectedAddress].address}
                               </Typography>
                             </Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {customer.addresses[selectedAddress].address}
-                            </Typography>
-                          </Box>
-                        )}
-                      </Box>
-                      
-                      <Button
-                        variant="contained"
+                          )}
+                        </Box>
+                        
+                        <Button
+                          variant="contained"
                           fullWidth={!!(window.innerWidth < 600)}
-                        size="large"
-                        onClick={handleOrder}
-                        startIcon={<PaymentIcon />}
-                        disabled={!customer.name || !customer.phone || !customer.isVerified || customer.addresses.length === 0}
-                        sx={{
-                          background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                          py: 1.5,
-                          borderRadius: 2,
+                          size="large"
+                          onClick={handleOrder}
+                          startIcon={<PaymentIcon />}
+                          disabled={!customer.name || !customer.phone || !customer.isVerified || customer.addresses.length === 0}
+                          sx={{
+                            background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                            py: 1.5,
+                            borderRadius: 2,
                             mt: { xs: 2, md: 0 },
-                          '&:hover': {
-                            background: 'linear-gradient(45deg, #FE6B8B 60%, #FF8E53 100%)',
-                            transform: 'translateY(-2px)'
-                          }
-                        }}
-                      >
-                        Proceed to Payment
-                      </Button>
-                    </Box>
-                  </Fade>
-                )}
-              </Paper>
-            </Grid>
-          </Slide>
+                            '&:hover': {
+                              background: 'linear-gradient(45deg, #FE6B8B 60%, #FF8E53 100%)',
+                              transform: 'translateY(-2px)'
+                            }
+                          }}
+                        >
+                          Proceed to Payment
+                        </Button>
+                      </Box>
+                    </Fade>
+                  )}
+                </Paper>
+              </Grid>
+            </Slide>
           )
         )}
         </Grid>
@@ -1417,78 +1393,78 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
             </DialogActions>
           </Dialog>
         ) : (
-        <Slide direction="up" in={showWishlist} timeout={1800}>
-          <Paper sx={{ p: 3, mt: 4, borderRadius: 3 }}>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-              Your Wishlist ({wishlist.length} items)
-            </Typography>
-            {wishlist.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <FavoriteIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary">
-                  Your wishlist is empty
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Add some products to your wishlist!
-                </Typography>
-              </Box>
-            ) : (
-              <Grid container spacing={2}>
-                {wishlist.map((product, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
-                    <Slide direction="up" in={true} timeout={500 + index * 200}>
-                      <Card sx={{ 
-                        borderRadius: 2,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                        }
-                      }}>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                              {product.name}
+          <Slide direction="up" in={showWishlist} timeout={1800}>
+            <Paper sx={{ p: 3, mt: 4, borderRadius: 3 }}>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
+                Your Wishlist ({wishlist.length} items)
+              </Typography>
+              {wishlist.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 8 }}>
+                  <FavoriteIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary">
+                    Your wishlist is empty
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Add some products to your wishlist!
+                  </Typography>
+                </Box>
+              ) : (
+                <Grid container spacing={2}>
+                  {wishlist.map((product, index) => (
+                    <Grid item xs={12} sm={6} md={4} lg={3} key={product._id}>
+                      <Slide direction="up" in={true} timeout={500 + index * 200}>
+                        <Card sx={{ 
+                          borderRadius: 2,
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
+                          }
+                        }}>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                {product.name}
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                onClick={() => toggleWishlist(product)}
+                                sx={{ color: 'error.main' }}
+                              >
+                                <FavoriteIcon />
+                              </IconButton>
+                            </Box>
+                            
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                              {product.description}
                             </Typography>
-                            <IconButton
-                              size="small"
-                              onClick={() => toggleWishlist(product)}
-                              sx={{ color: 'error.main' }}
+                            <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', mb: 2 }}>
+                              ₹{product.price} per {product.unit}
+                            </Typography>
+                            
+                            <Button
+                              variant="contained"
+                              fullWidth
+                              onClick={() => addToCart(product)}
+                              startIcon={<AddIcon />}
+                              sx={{
+                                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                                '&:hover': {
+                                  background: 'linear-gradient(45deg, #FE6B8B 60%, #FF8E53 100%)'
+                                }
+                              }}
                             >
-                              <FavoriteIcon />
-                            </IconButton>
-                          </Box>
-                          
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            {product.description}
-                          </Typography>
-                          <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', mb: 2 }}>
-                            ₹{product.price} per {product.unit}
-                          </Typography>
-                          
-                          <Button
-                            variant="contained"
-                            fullWidth
-                            onClick={() => addToCart(product)}
-                            startIcon={<AddIcon />}
-                            sx={{
-                              background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
-                              '&:hover': {
-                                background: 'linear-gradient(45deg, #FE6B8B 60%, #FF8E53 100%)'
-                              }
-                            }}
-                          >
-                            Add to Cart
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </Slide>
-                  </Grid>
-                ))}
-              </Grid>
-            )}
-          </Paper>
-        </Slide>
+                              Add to Cart
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </Slide>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </Paper>
+          </Slide>
         )
       )}
 
