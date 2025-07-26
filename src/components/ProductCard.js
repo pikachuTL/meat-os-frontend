@@ -18,7 +18,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import BlockIcon from '@mui/icons-material/Block';
 
-const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) => {
+const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist, highlighted, id }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const handleAddToCart = () => {
@@ -36,8 +36,9 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
   return (
     <Grow in={true} timeout={800}>
       <Card 
+        id={id}
         sx={{ 
-          height: 340, // reduced card height
+          height: 390, // increased card height
           display: 'flex', 
           flexDirection: 'column',
           position: 'relative',
@@ -45,6 +46,13 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
           borderRadius: 3,
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+          border: highlighted ? '3px solid #FE6B8B' : 'none',
+          boxShadow: highlighted ? '0 0 24px 4px #FE6B8B55' : undefined,
+          animation: highlighted ? 'highlight-pulse 1s infinite alternate' : 'none',
+          '@keyframes highlight-pulse': {
+            from: { boxShadow: '0 0 24px 4px #FE6B8B55' },
+            to: { boxShadow: '0 0 36px 8px #FE6B8B99' }
+          },
           '&:hover': {
             transform: 'translateY(-8px) scale(1.02)',
             boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
@@ -83,7 +91,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
             <Fade in={imageLoaded} timeout={500}>
               <CardMedia
                 component="img"
-                height="210"
+                height="260"
                 width="220"
                 image={`https://meat-os-backend-production.up.railway.app/uploads/${product.image}`}
                 alt={product.name}
@@ -93,7 +101,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
                 sx={{ 
                   objectFit: 'cover',
                   width: '100%',
-                  height: 210,
+                  height: 260,
                   transition: 'transform 0.3s ease',
                   filter: imageLoaded ? 'none' : 'blur(10px)'
                 }}
@@ -102,7 +110,7 @@ const ProductCard = ({ product, onAddToCart, onToggleWishlist, isInWishlist }) =
             {!imageLoaded && (
               <Box 
                 sx={{ 
-                  height: 210, 
+                  height: 260, 
                   backgroundColor: 'grey.200',
                   display: 'flex',
                   alignItems: 'center',

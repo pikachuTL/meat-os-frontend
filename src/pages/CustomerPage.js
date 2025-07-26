@@ -78,6 +78,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import RepeatIcon from '@mui/icons-material/Repeat';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 const API_BASE = "http://localhost:5000/api";
 const CATEGORY_API = 'https://meat-os-backend-production.up.railway.app/api/category';
@@ -127,13 +128,13 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
     'Delivered'
   ]);
   const [showCategoryHero, setShowCategoryHero] = useState(true);
+  // Customer authentication states
   const [signInOpen, setSignInOpen] = useState(false);
-  const [signInStep, setSignInStep] = useState('phone');
   const [signInPhone, setSignInPhone] = useState('');
-  const [signInOTP, setSignInOTP] = useState('');
+  const [signInEmail, setSignInEmail] = useState('');
+  const [signInName, setSignInName] = useState('');
   const [signInLoading, setSignInLoading] = useState(false);
   const [signInError, setSignInError] = useState('');
-  const [signInEmail, setSignInEmail] = useState('');
 
   // Show sign-in modal if not signed in
   // useEffect(() => {
@@ -215,6 +216,23 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
     // eslint-disable-next-line
   }, [orderHistoryOpen, customer.phone]);
 
+  // Fetch wishlist from backend when customer signs in or phone changes
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (customer && customer.phone) {
+        try {
+          const res = await axios.get(`${API_BASE}/auth/wishlist/${customer.phone}`);
+          setWishlist(res.data.wishlist || []);
+        } catch (err) {
+          setWishlist([]);
+        }
+      } else {
+        setWishlist([]);
+      }
+    };
+    fetchWishlist();
+  }, [customer.phone]);
+
   const addToCart = (product) => {
     setCart(prev => {
       const found = prev.find(item => item._id === product._id);
@@ -227,6 +245,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
       }
       return [...prev, { ...product, quantity: 1 }];
     });
+    setCartOpen(true); // Open cart popover/modal immediately
   };
 
   const updateQuantity = (id, qty) => {
@@ -257,8 +276,6 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
       return matchesSearch && matchesCategory && matchesPrice;
     })
     .sort((a, b) => {
-      console.log('Sorting by:', sortBy, 'Product A:', a.name, a.price, 'Product B:', b.name, b.price);
-      
       switch (sortBy) {
         case 'price-low':
           return (a.price || 0) - (b.price || 0);
@@ -335,19 +352,27 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
     }
   };
 
-  const toggleWishlist = (product) => {
-    setWishlist(prev => {
-      const exists = prev.find(item => item._id === product._id);
+  // Add/remove wishlist item and sync with backend
+  const toggleWishlist = async (product) => {
+    if (!customer.phone) {
+      showNotification('Please sign in to use wishlist', 'info');
+      setSignInOpen(true);
+      return;
+    }
+    const exists = wishlist.find(item => item._id === product._id);
+    try {
       if (exists) {
-        const updated = prev.filter(item => item._id !== product._id);
-        showNotification('Removed from wishlist!', 'info');
-        return updated;
+        // Remove from wishlist
+        const res = await axios.post(`${API_BASE}/auth/wishlist/remove`, { phone: customer.phone, productId: product._id });
+        setWishlist(res.data.wishlist || []);
       } else {
-        const updated = [...prev, product];
-        showNotification('Added to wishlist!', 'success');
-        return updated;
+        // Add to wishlist
+        const res = await axios.post(`${API_BASE}/auth/wishlist/add`, { phone: customer.phone, productId: product._id });
+        setWishlist(res.data.wishlist || []);
       }
-    });
+    } catch (err) {
+      showNotification('Failed to update wishlist', 'error');
+    }
   };
 
   const isInWishlist = (productId) => {
@@ -540,40 +565,39 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
   };
 
   const handleSendOTP = async () => {
+    if (!signInPhone || signInPhone.length !== 10) {
+      setSignInError('Please enter a valid 10-digit phone number');
+      return;
+    }
+    
     setSignInLoading(true);
     setSignInError('');
+    
     try {
-      await axios.post(`${API_BASE}/auth/customer/send-otp`, { phone: signInPhone, email: signInEmail });
-      setSignInStep('otp');
+      const response = await axios.post('http://localhost:5000/api/auth/customer/login', {
+        phone: signInPhone,
+        email: signInEmail,
+        name: signInName
+      });
+      
+      if (response.data.customer) {
+        setCustomer(response.data.customer);
+        localStorage.setItem('customer', JSON.stringify(response.data.customer));
+        setSignInOpen(false);
+        setSignInPhone('');
+        setSignInEmail('');
+        setSignInName('');
+        showNotification('Successfully signed in!', 'success');
+      }
     } catch (err) {
-      setSignInError('Failed to send OTP.');
+      setSignInError(err.response?.data?.message || 'Failed to sign in');
     } finally {
       setSignInLoading(false);
     }
   };
 
   const handleVerifyOTP = async () => {
-    setSignInLoading(true);
-    setSignInError('');
-    try {
-      const res = await axios.post(`${API_BASE}/auth/customer/verify-otp`, {
-        phone: signInPhone,
-        otp: signInOTP,
-        name: customer.name,
-        email: customer.email,
-        addresses: customer.addresses
-      });
-      setCustomer(res.data.customer);
-      setSignInOpen(false);
-      setSignInStep('phone');
-      setSignInPhone('');
-      setSignInOTP('');
-      setSignInEmail(''); // Clear email on successful sign-in
-    } catch (err) {
-      setSignInError('Invalid OTP.');
-    } finally {
-      setSignInLoading(false);
-    }
+    // This function is no longer needed as we're doing direct login
   };
 
   const handleSignOut = () => {
@@ -603,6 +627,9 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
     setCartOpen(true);
     showNotification('Order added to cart! You can edit quantity and proceed to payment.', 'info');
   };
+
+  const isMobile = useMediaQuery('(max-width:600px)');
+  const [highlightedProductId, setHighlightedProductId] = useState(null);
 
   if (loading) {
     return <LoadingSpinner message="Loading products..." />;
@@ -705,10 +732,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
                     value={sortBy}
                     onChange={(e) => {
                       const newSortBy = e.target.value;
-                      console.log('Sort change event:', e.target.value);
-                      console.log('Previous sort:', sortBy);
                       setSortBy(newSortBy);
-                      console.log('New sort set to:', newSortBy);
                       
                       // Show notification based on sort type
                       switch (newSortBy) {
@@ -871,21 +895,39 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
               </Button>
             </Tooltip>
             {/* Reorder Button */}
-            <Tooltip title="Reorder">
-              <Badge badgeContent={orders.length} color="secondary">
+            <Tooltip title={customer.phone ? `Reorder (${orders.length} orders)` : "Sign in to view order history"}>
+              <Badge badgeContent={customer.phone ? orders.length : 0} color="secondary">
                 <Button
                   variant="contained"
-                  onClick={() => setOrderHistoryOpen(true)}
+                  onClick={() => {
+                    if (customer.phone) {
+                      setOrderHistoryOpen(true);
+                    } else {
+                      showNotification('Please sign in to view your order history', 'info');
+                      setSignInOpen(true);
+                    }
+                  }}
+                  disabled={!customer.phone}
                   sx={{
                     borderRadius: '50%',
                     width: 56,
                     height: 56,
                     minWidth: 0,
-                    background: 'linear-gradient(45deg, #2196F3 30%, #1976D2 90%)',
-                    boxShadow: '0 4px 20px rgba(33, 150, 243, 0.4)',
+                    background: customer.phone 
+                      ? 'linear-gradient(45deg, #2196F3 30%, #1976D2 90%)'
+                      : 'linear-gradient(45deg, #9E9E9E 30%, #757575 90%)',
+                    boxShadow: customer.phone 
+                      ? '0 4px 20px rgba(33, 150, 243, 0.4)'
+                      : '0 4px 20px rgba(158, 158, 158, 0.4)',
                     '&:hover': {
-                      transform: 'scale(1.1)',
-                      boxShadow: '0 6px 25px rgba(33, 150, 243, 0.6)'
+                      transform: customer.phone ? 'scale(1.1)' : 'none',
+                      boxShadow: customer.phone 
+                        ? '0 6px 25px rgba(33, 150, 243, 0.6)'
+                        : '0 4px 20px rgba(158, 158, 158, 0.4)'
+                    },
+                    '&:disabled': {
+                      background: 'linear-gradient(45deg, #9E9E9E 30%, #757575 90%)',
+                      color: 'rgba(255,255,255,0.7)'
                     }
                   }}
                 >
@@ -1006,6 +1048,8 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
                       onAddToCart={addToCart}
                       onToggleWishlist={toggleWishlist}
                       isInWishlist={isInWishlist(product._id)}
+                      highlighted={highlightedProductId === product._id}
+                      id={'product-' + product._id}
                     />
                     </Box>
                   </Grid>
@@ -1056,9 +1100,89 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
 
         {/* Cart Section */}
         {cartOpen && (
+          isMobile ? (
+            <Dialog open={cartOpen} onClose={() => setCartOpen(false)} fullWidth maxWidth="xs">
+              <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ShoppingCartIcon sx={{ color: 'primary.main' }} />
+                Your Cart ({cart.length} items)
+              </DialogTitle>
+              <DialogContent dividers sx={{ p: 0, maxHeight: '70vh', overflowY: 'auto' }}>
+                {cart.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <ShoppingCartIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary">
+                      Your cart is empty
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Add some products to get started!
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ p: 2 }}>
+                    {cart.map((item, index) => (
+                      <Card sx={{ mb: 2, borderRadius: 2 }} key={item._id}>
+                        <CardContent sx={{ p: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            {item.image && (
+                              <Box sx={{ mr: 2 }}>
+                                <img
+                                  src={`https://meat-os-backend-production.up.railway.app/uploads/${item.image}`}
+                                  alt={item.name}
+                                  style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                                />
+                              </Box>
+                            )}
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                {item.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                ₹{item.price} per {item.unit}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <IconButton size="small" onClick={() => updateQuantity(item._id, Math.max(0, item.quantity - 1))} sx={{ backgroundColor: 'grey.100' }}>
+                                <RemoveIcon fontSize="small" />
+                              </IconButton>
+                              <Typography sx={{ minWidth: 30, textAlign: 'center' }}>{item.quantity}</Typography>
+                              <IconButton size="small" onClick={() => updateQuantity(item._id, item.quantity + 1)} sx={{ backgroundColor: 'primary.light', color: 'white' }}>
+                                <AddIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton size="small" onClick={() => removeFromCart(item._id)} sx={{ backgroundColor: 'error.light', color: 'white' }}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          </Box>
+                          <Typography variant="h6" sx={{ mt: 1, fontWeight: 'bold', color: 'primary.main' }}>
+                            ₹{item.price * item.quantity}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <Divider sx={{ my: 2 }} />
+                    <Box sx={{ mb: 3 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                        Total: ₹{total}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setCartOpen(false)} color="secondary">Close</Button>
+                <Button
+                  variant="contained"
+                  onClick={handleOrder}
+                  disabled={!customer.name || !customer.phone || !customer.isVerified || customer.addresses.length === 0 || cart.length === 0}
+                >
+                  Proceed to Payment
+                </Button>
+              </DialogActions>
+            </Dialog>
+          ) : (
           <Slide direction="left" in={cartOpen} timeout={300}>
             <Grid item xs={12} lg={4}>
-              <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, height: 'fit-content', position: 'sticky', top: 20, width: { xs: '100%', lg: 'auto' }, boxShadow: { xs: 2, md: 3 } }}>
+                <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, height: 'fit-content', position: 'sticky', top: 20, width: { xs: '100%', lg: 'auto' }, boxShadow: { xs: 2, md: 3 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                   <ShoppingCartIcon sx={{ mr: 1, color: 'primary.main' }} />
                   <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
@@ -1086,15 +1210,15 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
                           <Card sx={{ mb: 2, borderRadius: 2 }}>
                             <CardContent sx={{ p: 2 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                {item.image && (
-                                  <Box sx={{ mr: 2 }}>
-                                    <img
-                                      src={`https://meat-os-backend-production.up.railway.app/uploads/${item.image}`}
-                                      alt={item.name}
-                                      style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
-                                    />
-                                  </Box>
-                                )}
+                                  {item.image && (
+                                    <Box sx={{ mr: 2 }}>
+                                      <img
+                                        src={`https://meat-os-backend-production.up.railway.app/uploads/${item.image}`}
+                                        alt={item.name}
+                                        style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                                      />
+                                    </Box>
+                                  )}
                                 <Box sx={{ flex: 1 }}>
                                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
                                     {item.name}
@@ -1194,7 +1318,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
                       
                       <Button
                         variant="contained"
-                        fullWidth={!!(window.innerWidth < 600)}
+                          fullWidth={!!(window.innerWidth < 600)}
                         size="large"
                         onClick={handleOrder}
                         startIcon={<PaymentIcon />}
@@ -1203,7 +1327,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
                           background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
                           py: 1.5,
                           borderRadius: 2,
-                          mt: { xs: 2, md: 0 },
+                            mt: { xs: 2, md: 0 },
                           '&:hover': {
                             background: 'linear-gradient(45deg, #FE6B8B 60%, #FF8E53 100%)',
                             transform: 'translateY(-2px)'
@@ -1218,12 +1342,81 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
               </Paper>
             </Grid>
           </Slide>
+          )
         )}
         </Grid>
       )}
 
       {/* Wishlist Section */}
-      {!showCategoryHero && showWishlist && (
+      {showWishlist && (
+        isMobile ? (
+          <Dialog open={showWishlist} onClose={() => setShowWishlist(false)} fullWidth maxWidth="xs">
+            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FavoriteIcon sx={{ color: 'primary.main' }} />
+              Your Wishlist ({wishlist.length} items)
+            </DialogTitle>
+            <DialogContent dividers sx={{ p: 0, maxHeight: '70vh', overflowY: 'auto' }}>
+              {wishlist.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <FavoriteIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary">
+                    Your wishlist is empty
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Add some products to your wishlist!
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ p: 2 }}>
+                  {wishlist.map((product, index) => (
+                    <Card sx={{ mb: 2, borderRadius: 2, cursor: 'pointer', boxShadow: highlightedProductId === product._id ? 6 : 1, border: highlightedProductId === product._id ? '2px solid #FE6B8B' : 'none' }} key={product._id} onClick={() => {
+  setShowWishlist(false);
+  setHighlightedProductId(product._id);
+  setTimeout(() => {
+    const el = document.getElementById('product-' + product._id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 300);
+  setTimeout(() => setHighlightedProductId(null), 3000);
+}}>
+                      <CardContent sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          {product.image && (
+                            <Box sx={{ mr: 2 }}>
+                              <img
+                                src={`https://meat-os-backend-production.up.railway.app/uploads/${product.image}`}
+                                alt={product.name}
+                                style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                              />
+                            </Box>
+                          )}
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                              {product.name}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              ₹{product.price} per {product.unit}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <IconButton size="small" onClick={() => toggleWishlist(product)} sx={{ backgroundColor: 'error.light', color: 'white' }}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </Box>
+                        <Typography variant="body2" sx={{ mt: 1, color: 'primary.main' }}>
+                          {product.description}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Box>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setShowWishlist(false)} color="secondary">Close</Button>
+            </DialogActions>
+          </Dialog>
+        ) : (
         <Slide direction="up" in={showWishlist} timeout={1800}>
           <Paper sx={{ p: 3, mt: 4, borderRadius: 3 }}>
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
@@ -1296,6 +1489,7 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
             )}
           </Paper>
         </Slide>
+        )
       )}
 
       {/* Profile Dialog */}
@@ -1571,11 +1765,8 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
                 label="Address Type"
                 onChange={(e) => {
                   const newType = e.target.value;
-                  console.log('Address type change event:', e.target.value);
                   setNewAddress(prev => {
-                    console.log('Previous address:', prev);
                     const updated = { ...prev, type: newType };
-                    console.log('Updated address:', updated);
                     return updated;
                   });
                   
@@ -1710,66 +1901,64 @@ const CustomerPage = ({ showNotification, isAdminView = false }) => {
       <Dialog open={signInOpen} disableEscapeKeyDown fullWidth maxWidth="xs" sx={{ px: { xs: 1, md: 3 } }}>
         <DialogTitle>Sign In to Continue</DialogTitle>
         <DialogContent>
-          {signInStep === 'phone' ? (
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                label="Mobile Number"
-                fullWidth
-                value={signInPhone}
-                onChange={e => setSignInPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                inputProps={{ maxLength: 10 }}
-                disabled={signInLoading}
-                sx={{ mb: 2 }}
-                required
-              />
-              <TextField
-                label="Email (optional)"
-                fullWidth
-                value={signInEmail}
-                onChange={e => setSignInEmail(e.target.value)}
-                disabled={signInLoading}
-                sx={{ mb: 2 }}
-                type="email"
-              />
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={handleSendOTP}
-                disabled={signInLoading || signInPhone.length !== 10}
-              >
-                {signInLoading ? 'Sending OTP...' : 'Send OTP'}
-              </Button>
-            </Box>
-          ) : (
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                label="Enter OTP"
-                fullWidth
-                value={signInOTP}
-                onChange={e => setSignInOTP(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                inputProps={{ maxLength: 6 }}
-                disabled={signInLoading}
-                sx={{ mb: 2 }}
-              />
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={handleVerifyOTP}
-                disabled={signInLoading || signInOTP.length !== 6}
-              >
-                {signInLoading ? 'Verifying...' : 'Verify OTP'}
-              </Button>
-              <Button
-                fullWidth
-                sx={{ mt: 1 }}
-                onClick={() => { setSignInStep('phone'); setSignInOTP(''); }}
-                disabled={signInLoading}
-              >
-                Change Number
-              </Button>
-            </Box>
-          )}
-          {signInError && <Alert severity="error" sx={{ mt: 2 }}>{signInError}</Alert>}
+          <Box sx={{ pt: 1 }}>
+            <TextField
+              fullWidth
+              label="Phone Number *"
+              value={signInPhone}
+              onChange={(e) => setSignInPhone(e.target.value)}
+              placeholder="Enter 10-digit phone number"
+              required
+              disabled={signInLoading}
+              sx={{ mb: 2 }}
+              inputProps={{ maxLength: 10 }}
+            />
+            
+            <TextField
+              fullWidth
+              label="Email (Optional)"
+              type="email"
+              value={signInEmail}
+              onChange={(e) => setSignInEmail(e.target.value)}
+              placeholder="Enter your email"
+              disabled={signInLoading}
+              sx={{ mb: 2 }}
+            />
+            
+            <TextField
+              fullWidth
+              label="Full Name (Optional)"
+              value={signInName}
+              onChange={(e) => setSignInName(e.target.value)}
+              placeholder="Enter your full name"
+              disabled={signInLoading}
+              sx={{ mb: 2 }}
+            />
+            
+            {signInError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {signInError}
+              </Alert>
+            )}
+            
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleSendOTP}
+              disabled={signInLoading || !signInPhone || signInPhone.length !== 10}
+              sx={{
+                background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+                color: 'white',
+                py: 1.5,
+                borderRadius: 2,
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #FE6B8B 60%, #FF8E53 100%)'
+                }
+              }}
+            >
+              {signInLoading ? 'Signing In...' : 'Sign In / Sign Up'}
+            </Button>
+          </Box>
         </DialogContent>
       </Dialog>
 

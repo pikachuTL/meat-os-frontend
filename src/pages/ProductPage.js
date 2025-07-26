@@ -29,7 +29,11 @@ import {
   Grow,
   Container,
   Alert,
-  InputAdornment
+  InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -50,6 +54,7 @@ const ProductPage = ({ showNotification }) => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState({
     name: '',
     category: '',
@@ -88,10 +93,8 @@ const ProductPage = ({ showNotification }) => {
   };
 
   const handleFile = e => {
-    console.log('handleFile called', e.target.files);
     const file = e.target.files[0];
     if (file) {
-      console.log('File selected:', file.name, file.type);
       setForm(f => ({ ...f, image: file }));
       const reader = new FileReader();
       reader.onload = (e) => setImagePreview(e.target.result);
@@ -135,6 +138,7 @@ const ProductPage = ({ showNotification }) => {
         image: null
       });
       setImagePreview(null);
+      setFormOpen(false);
       
       // Refresh data
       const [productsRes, categoriesRes] = await Promise.all([
@@ -162,6 +166,7 @@ const ProductPage = ({ showNotification }) => {
       image: null
     });
     setImagePreview(null);
+    setFormOpen(true);
   };
 
   const handleDelete = async id => {
@@ -175,6 +180,22 @@ const ProductPage = ({ showNotification }) => {
   };
 
   const handleCancelEdit = () => {
+    setEditingProduct(null);
+    setForm({
+      name: '',
+      category: '',
+      price: '',
+      unit: 'kg',
+      description: '',
+      available: true,
+      image: null
+    });
+    setImagePreview(null);
+    setFormOpen(false);
+  };
+
+  const handleOpenForm = () => {
+    setFormOpen(true);
     setEditingProduct(null);
     setForm({
       name: '',
@@ -224,18 +245,57 @@ const ProductPage = ({ showNotification }) => {
           <Typography variant="h6" color="text.secondary" sx={{ mb: 3 }}>
             Add and manage your meat products with images and details
           </Typography>
+          
+          {/* Add Product Button */}
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<AddIcon />}
+            onClick={handleOpenForm}
+            sx={{
+              background: 'linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)',
+              color: 'white',
+              px: 4,
+              py: 1.5,
+              borderRadius: 3,
+              fontSize: '1.1rem',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 15px rgba(254, 107, 139, 0.3)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #FE6B8B 60%, #FF8E53 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 20px rgba(254, 107, 139, 0.4)'
+              }
+            }}
+          >
+            Add Product
+          </Button>
         </Box>
       </Fade>
 
-      {/* Add/Edit Product Form */}
-      <Slide direction="up" in={true} timeout={1200}>
-        <Paper sx={{ p: 4, mb: 4, borderRadius: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3, textAlign: 'center' }}>
+      {/* Add/Edit Product Dialog */}
+      <Dialog 
+        open={formOpen} 
+        onClose={handleCancelEdit} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white'
+          }
+        }}
+      >
+        <DialogTitle>
+          <Typography variant="h5" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
             {editingProduct ? 'Edit Product' : 'Add New Product'}
           </Typography>
-          
+        </DialogTitle>
+        
+        <DialogContent>
           <form onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
+            <Grid container spacing={3} sx={{ mt: 1 }}>
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -408,7 +468,6 @@ const ProductPage = ({ showNotification }) => {
                     disabled={submitting}
                     fullWidth
                     startIcon={<ImageIcon />}
-                    onClick={() => console.log('Button clicked')}
                     sx={{
                       color: 'white',
                       borderColor: 'rgba(255,255,255,0.3)',
@@ -447,24 +506,6 @@ const ProductPage = ({ showNotification }) => {
                   >
                     {submitting ? 'Saving...' : (editingProduct ? 'Update Product' : 'Add Product')}
                   </Button>
-                  {editingProduct && (
-                    <Button
-                      variant="outlined"
-                      startIcon={<CancelIcon />}
-                      onClick={handleCancelEdit}
-                      disabled={submitting}
-                      sx={{
-                        color: 'white',
-                        borderColor: 'rgba(255,255,255,0.3)',
-                        '&:hover': {
-                          borderColor: 'white',
-                          backgroundColor: 'rgba(255,255,255,0.1)'
-                        }
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  )}
                 </Box>
               </Grid>
             </Grid>
@@ -492,8 +533,25 @@ const ProductPage = ({ showNotification }) => {
               </Box>
             </Fade>
           )}
-        </Paper>
-      </Slide>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={handleCancelEdit}
+            disabled={submitting}
+            sx={{
+              color: 'white',
+              borderColor: 'rgba(255,255,255,0.3)',
+              '&:hover': {
+                borderColor: 'white',
+                backgroundColor: 'rgba(255,255,255,0.1)'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Products List */}
       <Slide direction="up" in={true} timeout={1500}>
@@ -507,7 +565,7 @@ const ProductPage = ({ showNotification }) => {
 
           {products.length === 0 ? (
             <Alert severity="info" sx={{ textAlign: 'center', py: 4 }}>
-              No products found. Add your first product above to get started!
+              No products found. Click "Add Product" to get started!
             </Alert>
           ) : (
             <Grid container spacing={3}>

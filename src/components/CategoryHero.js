@@ -95,12 +95,9 @@ const CategoryHero = ({ onCategorySelect }) => {
       {/* Category Cards */}
       <Box
         sx={{
-          display: { xs: 'flex', md: 'grid' },
-          flexDirection: { xs: 'row', md: 'unset' },
-          overflowX: { xs: 'auto', md: 'unset' },
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
           gap: 3,
-          gridTemplateColumns: { md: 'repeat(2, 1fr)' },
-          pb: { xs: 2, md: 0 },
           mb: 4
         }}
       >
@@ -108,9 +105,7 @@ const CategoryHero = ({ onCategorySelect }) => {
           <Box
             key={category.id}
             sx={{
-              minWidth: { xs: 280, md: 'unset' },
-              flex: { xs: '0 0 auto', md: 'unset' },
-              maxWidth: { xs: 320, md: 'unset' }
+              width: '100%'
             }}
           >
             <Slide direction="up" in={true} timeout={800 + index * 200}>
@@ -223,16 +218,13 @@ const CategoryHero = ({ onCategorySelect }) => {
           </Typography>
           <Box
             sx={{
-              display: { xs: 'flex', md: 'grid' },
-              flexDirection: { xs: 'row', md: 'unset' },
-              overflowX: { xs: 'auto', md: 'unset' },
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
               gap: 3,
-              gridTemplateColumns: { md: 'repeat(3, 1fr)' },
-              pb: { xs: 2, md: 0 },
               mb: 2
             }}
           >
-            <Box sx={{ minWidth: { xs: 220, md: 'unset' }, flex: { xs: '0 0 auto', md: 'unset' }, maxWidth: { xs: 260, md: 'unset' }, textAlign: 'center' }}>
+            <Box sx={{ textAlign: 'center' }}>
               <RestaurantIcon sx={{ fontSize: 40, mb: 1 }} />
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
                 Fresh Daily
@@ -241,7 +233,7 @@ const CategoryHero = ({ onCategorySelect }) => {
                 All our meat is sourced fresh daily from trusted suppliers
               </Typography>
             </Box>
-            <Box sx={{ minWidth: { xs: 220, md: 'unset' }, flex: { xs: '0 0 auto', md: 'unset' }, maxWidth: { xs: 260, md: 'unset' }, textAlign: 'center' }}>
+            <Box sx={{ textAlign: 'center' }}>
               <LocalShippingIcon sx={{ fontSize: 40, mb: 1 }} />
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
                 Fast Delivery
@@ -250,7 +242,7 @@ const CategoryHero = ({ onCategorySelect }) => {
                 Get your order delivered within 45 minutes
               </Typography>
             </Box>
-            <Box sx={{ minWidth: { xs: 220, md: 'unset' }, flex: { xs: '0 0 auto', md: 'unset' }, maxWidth: { xs: 260, md: 'unset' }, textAlign: 'center' }}>
+            <Box sx={{ textAlign: 'center' }}>
               <TimerIcon sx={{ fontSize: 40, mb: 1 }} />
               <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
                 Quality Assured
